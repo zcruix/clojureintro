@@ -1,5 +1,5 @@
 (ns clojureintro.core
-  (:use bakery.core))
+  (:use [bakery.core]))
 
 (defn error [& args]
   (apply println args)
@@ -125,18 +125,6 @@
 
       (error "I do not have the ingredient" ingredient))))
 
-(defn bake-cake []
-  (add :egg 2)
-  (add :flour 2)
-  (add :milk 1)
-  (add :sugar 1)
-
-  (mix)
-
-  (pour-into-pan)
-  (bake-pan 25)
-  (cool-pan))
-
 (defn bake-cookies []
   (add :egg 1)
   (add :flour 1)
@@ -149,8 +137,20 @@
   (bake-pan 30)
   (cool-pan))
 
+(defn bake-cake []
+  (add :egg 2)
+  (add :flour 2)
+  (add :milk 1)
+  (add :sugar 1)
+
+  (mix)
+
+  (pour-into-pan)
+  (bake-pan 25)
+  (cool-pan))
+
 (defn fetch-from-pantry ( [ingredient]
-                          fetch-from-pantry ingredient 1 ) 
+                          fetch-from-pantry ingredient 1 )
   ([ingredient amount]
    (if (from-pantry? ingredient)
      (do
@@ -158,12 +158,12 @@
        (dotimes [i amount]
          (load-up ingredient))
        (go-to :prep-area)
-       (dotimes [i amount] 
+       (dotimes [i amount]
          (unload ingredient)))
      (error "This function only works on ingredients in the pantry. You asked me to fetch" ingredient))))
 
 (defn fetch-from-fridge ( [ingredient]
-                          fetch-from-fridge ingredient 1 ) 
+                          fetch-from-fridge ingredient 1 )
   ([ingredient amount]
    (if (from-fridge? ingredient)
      (do
@@ -171,7 +171,7 @@
        (dotimes [i amount]
          (load-up ingredient))
        (go-to :prep-area)
-       (dotimes [i amount] 
+       (dotimes [i amount]
          (unload ingredient)))
      (error "This function only works on ingredients in the fridge. You asked me to fetch" ingredient))))
 
@@ -206,29 +206,52 @@
     (doseq [ingredient ingredients]
       (unload-amount ingredient (ingredient shopping-list 0)))))
 
-(def cake-list {:egg 2
-                   :flour 2
-                   :milk 1
-                   :sugar 1})
+ (def cake-list {:egg 2
+                 :flour 2
+                 :milk 1
+                 :sugar 1})
 
  (def cookies-list {:egg 1
-                   :flour 1
-                   :butter 1
+                    :flour 1
+                    :butter 1
                     :sugar 1 })
 
-(defn total-ingredient-list [list f]
-(into {} (for [[k v] list] [k (f v)])))
+(defn add-ingredients [a b]
+  (merge-with + a b))
+
+(defn multiply-ingredients [n ingredients]
+  (for [[ingredient amount] ingredients] [ingredient (* n amount)]))
+
+(defn order->ingredient [order]
+  (add-ingredients (multiply-ingredients (:cake (:items order 0)) cake-list)
+                   (multiply-ingredients (:cookies (:items order 0) cookies-list))))
+
+(defn orders->ingredients [orders]
+  (reduce add-ingredients (map orders->ingredients orders)))
+
+(defn bake [item]
+  (cond
+   (= :cake item)
+   (bake-cake)
+   (= :cookies item)
+   (bake-cookies)
+   :else
+   (error "I don't know how to bake" item))
+  )
 
 (defn day-at-the-bakery []
-  (doseq [order (get-morning-orders)]
-    (fetch-list
-     (merge-with + (total-ingredient-list  cake-list #(* (:cake (:items order) 0) %))
-       (total-ingredient-list  cookies-list #(* (:cookies (:items order) 0) %)))
-     (dotimes [i (:cake (:items order) 0)] (bake-cake))
-     (dotimes [i (:cookies (:items order) 0)] (bake-cookies))
-    )))
-                          
-    
+  (let [orders (get-morning-orders)
+        ingredient-list (orders->ingredients orders)]
+    (fetch-list ingredient-list)
+    (doseq [order orders]
+      (let [items (:items order)
+            racks (for [[item amount] items i (range amount)]
+                    (bake item))
+            receipt {:orderid (:orderid order)
+                     :address (:address order)
+                     :rackids racks}]
+        (delivery receipt)))))
+
 (defn -main []
   (start-over)
   (day-at-the-bakery)
