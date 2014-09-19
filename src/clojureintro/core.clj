@@ -235,16 +235,17 @@
    (= :cookies item)
    (bake-cookies)
    :else
-   (error "I don't know how to bake" item))
-  )
+   (error "I don't know how to bake" item)))
 
 (defn day-at-the-bakery []
   (let [orders (get-morning-orders)
         ingredient-list (orders->ingredients orders)]
     (fetch-list ingredient-list)
+    (status)
     (doseq [order orders]
       (let [items (:items order)
-            racks (for [[item amount] items i (range amount)]
+            racks (for [[item amount] items
+                        i (range amount)]
                     (bake item))
             receipt {:orderid (:orderid order)
                      :address (:address order)
