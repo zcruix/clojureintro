@@ -214,20 +214,19 @@
  (def cookies-list {:egg 1
                     :flour 1
                     :butter 1
-                    :sugar 1 })
+                    :sugar 1})
 
 (defn add-ingredients [a b]
   (merge-with + a b))
 
 (defn multiply-ingredients [n ingredients]
-  (for [[ingredient amount] ingredients] [ingredient (* n amount)]))
+  (into {} (for [[ingredient amount] ingredients] [ingredient (* n amount)])))
 
-(defn order->ingredient [order]
-  (add-ingredients (multiply-ingredients (:cake (:items order 0)) cake-list)
-                   (multiply-ingredients (:cookies (:items order 0) cookies-list))))
+(defn order->ingredients [order]
+  (add-ingredients (multiply-ingredients (:cake (:items order) 0) cake-list) (multiply-ingredients (:cookies (:items order) 0) cookies-list)))
 
 (defn orders->ingredients [orders]
-  (reduce add-ingredients (map orders->ingredients orders)))
+  (reduce add-ingredients (map order->ingredients orders)))
 
 (defn bake [item]
   (cond
